@@ -1,4 +1,5 @@
 import { MODULE_BY_KEY } from '@/data/modules'
+import { BREAKER_KEY, completeBreakerMaintenance } from '@/data/breaker'
 import { allRows, listRows, resetRows, saveRows } from '@/data/local-store'
 import type { ActionResult, EntryRow, ModuleMeta, OverviewResult, PageResult } from '@/data/types'
 
@@ -41,7 +42,13 @@ export function runAction(key: string, id: number, action: string): ActionResult
   }
   const current = String(rows[index].status)
   if (current === target) {
-    return { ok: false, message: `${meta.entity}已经是「${target}」，不用重复操作` }
+    // 断路器允许重复提交保养（只留最近一条），这里不能直接挡掉，交给专用口径处理。
+    if (!(key === BREAKER_KEY && action === '完成保养')) {
+      return { ok: false, message: `${meta.entity}已经是「${target}」，不用重复操作` }
+    }
+  }
+  if (key === BREAKER_KEY && action === '完成保养') {
+    return completeBreakerMaintenance(id)
   }
   const lastStatus = meta.statuses[meta.statuses.length - 1]
   const updated: EntryRow = {

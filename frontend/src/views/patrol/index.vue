@@ -24,6 +24,31 @@
       </span>
     </p>
 
+    <section class="review-panel">
+      <h3 class="review-title">待复查清单（断路器侧结论为需检修，共 {{ reviewRows.length }} 台）</h3>
+      <p v-if="reviewLoadFailed" class="review-empty error-text">
+        待复查清单读取失败：{{ reviewError || '数据暂不可用' }}
+        <button class="btn" type="button" @click="loadReview">重试</button>
+      </p>
+      <p v-else-if="!reviewRows.length" class="review-empty">当前没有需检修的断路器，巡视侧暂无待复查项。</p>
+      <table v-else class="data-table">
+        <thead>
+          <tr><th>设备编号</th><th>所属间隔</th><th>上次保养日</th><th>断路器结论</th><th>处理</th></tr>
+        </thead>
+        <tbody>
+          <tr v-for="row in reviewRows" :key="String(row.id)">
+            <td>{{ row['设备编号'] }}</td>
+            <td>{{ row['所属间隔'] }}</td>
+            <td>{{ lastMaintenanceDate(row) || '未保养' }}</td>
+            <td><span class="tag tag-warn">需检修</span></td>
+            <td class="row-actions">
+              <RouterLink class="link" :to="`/breaker/${row.id}`">查看设备</RouterLink>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
     <form class="filter-bar" @submit.prevent="reload">
       <label v-for="field in filterFields" :key="field" class="filter-item">
         <span>{{ field }}</span>
@@ -57,7 +82,13 @@
             </button>
           </td>
         </tr>
-        <tr v-if="!rows.length">
+        <tr v-if="loadFailed">
+          <td :colspan="columns.length + 2" class="empty-state">
+            <p class="error-text">设备巡视列表读取失败：{{ errorMessage || '数据暂不可用' }}</p>
+            <button class="btn" type="button" @click="reload">重试</button>
+          </td>
+        </tr>
+        <tr v-else-if="!rows.length">
           <td :colspan="columns.length + 2" class="empty-state">暂无设备巡视数据，可先登记巡视记录</td>
         </tr>
       </tbody>
@@ -79,25 +110,49 @@ import {
   moduleMeta,
   runAction as applyAction,
 } from '@/api/local-service'
+import { lastMaintenanceDate, reviewPendingBreakers } from '@/data/breaker'
 import type { EntryRow } from '@/data/types'
 
 const meta = moduleMeta('patrol')
-const columns = ["巡视编号", "巡视变电站", "巡视路线", "巡视人", "巡视日期", "发现缺陷数", "处理情况", "巡视状态"]
-const actions = ["提交巡视", "确认完成", "上报问题"]
-const statuses = ["待巡视", "巡视中", "已完成", "已上报"]
-const stats = [{"label": "待巡视站点", "value": 0}, {"label": "已完成巡视", "value": 0}, {"label": "本月发现问题数", "value": 0}]
+const columns = ['巡视编号', '巡视变电站', '巡视路线', '巡视人', '巡视日期', '发现缺陷数', '处理情况', '巡视状态']
+const actions = ['提交巡视', '确认完成', '上报问题']
+const statuses = ['待巡视', '巡视中', '已完成', '已上报']
 
 const rows = ref<EntryRow[]>([])
 const total = ref(0)
 const errorMessage = ref('')
+const loadFailed = ref(false)
 const filters = ref<Record<string, string>>({})
 const filterFields = columns.slice(0, 3)
+
+const reviewRows = ref<EntryRow[]>([])
+const reviewLoadFailed = ref(false)
+const reviewError = ref('')
+
+const stats = computed(() => [
+  { label: '待巡视站点', value: rows.value.filter((row) => String(row.status) === '待巡视').length },
+  { label: '已完成巡视', value: rows.value.filter((row) => String(row.status) === '已完成').length },
+  { label: '待复查设备', value: reviewRows.value.length },
+])
+
 const statusSummary = computed(() =>
   statuses.map((status: string) => ({
     status,
     count: rows.value.filter((row) => String(row.status) === status).length,
   })),
 )
+
+function loadReview() {
+  reviewLoadFailed.value = false
+  reviewError.value = ''
+  try {
+    reviewRows.value = reviewPendingBreakers()
+  } catch (error) {
+    reviewRows.value = []
+    reviewLoadFailed.value = true
+    reviewError.value = error instanceof Error ? error.message : '待复查清单读取失败'
+  }
+}
 
 function resetFilters() {
   filters.value = {}
@@ -124,14 +179,35 @@ function runAction(action: string, row: EntryRow) {
 
 function reload() {
   errorMessage.value = ''
+  loadFailed.value = false
   try {
     const payload = listEntries(meta.key, filters.value)
     rows.value = payload.items
     total.value = payload.total
   } catch (error) {
+    loadFailed.value = true
+    rows.value = []
+    total.value = 0
     errorMessage.value = error instanceof Error ? error.message : '设备巡视列表读取失败'
   }
+  loadReview()
 }
 
 onMounted(reload)
 </script>
+
+<style scoped>
+.review-panel {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-left: 4px solid #b54708;
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+}
+.review-title { margin: 0 0 8px; font-size: 14px; }
+.review-empty { margin: 0; color: var(--muted); font-size: 13px; }
+.review-empty .btn { margin-left: 8px; }
+.tag { display: inline-block; border-radius: 999px; padding: 1px 8px; font-size: 12px; }
+.tag-warn { background: #fef3c7; color: #92400e; }
+</style>
