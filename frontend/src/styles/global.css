@@ -35,3 +35,33 @@ body { margin: 0; background: #f6f8fb; color: #1f2937; }
 .error-text { color: #b42318; }
 .status-legend { display: flex; flex-wrap: wrap; gap: 12px; margin: 0 0 10px; font-size: 12px; color: var(--muted); }
 .legend-item { background: #eef2f7; border-radius: 999px; padding: 2px 10px; }
+
+.panel { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; }
+.panel-title { margin: 0 0 8px; font-size: 14px; }
+.panel-empty { margin: 0; color: var(--muted); font-size: 13px; }
+.reminder-list, .pending-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.reminder-item, .pending-item { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 13px; }
+.muted { color: var(--muted); }
+.tag { display: inline-block; border-radius: 999px; padding: 1px 8px; font-size: 12px; line-height: 1.6; }
+.tag.warn { background: #fef3c7; color: #92400e; }
+.tag.danger { background: #fee4e2; color: #b42318; }
+.tag.missing { background: #ffedd5; color: #9a3412; }
+.missing-inline { margin-left: 6px; font-size: 12px; color: #9a3412; background: #ffedd5; border-radius: 4px; padding: 0 6px; }
+.row-abnormal { background: #fef3f2; }
+.error-state { padding: 18px 10px; }
+.error-state p { margin: 0 0 8px; color: #b42318; }
+.success-text { color: #027a48; }
+
+.modal-mask { position: fixed; inset: 0; background: rgba(16, 24, 40, 0.45); display: flex; align-items: center; justify-content: center; z-index: 50; }
+.modal-card { background: #fff; border-radius: 10px; width: 420px; max-width: calc(100vw - 32px); padding: 16px; }
+.modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.modal-hint { margin: 0 0 12px; color: var(--muted); font-size: 12px; }
+.modal-form { display: flex; flex-direction: column; gap: 10px; }
+.modal-field span { display: block; font-size: 12px; color: var(--muted); margin-bottom: 2px; }
+.modal-field em { color: #b42318; font-style: normal; }
+.modal-field input { width: 100%; border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; }
+.modal-error { margin: 0; font-size: 12px; }
+.modal-foot { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
+
+.detail-table th { width: 160px; background: #f8fafc; }
+.detail-error { margin-top: 24px; }
